@@ -122,6 +122,20 @@ public final class BraintreePlugin extends CordovaPlugin {
 
         dropInRequest.amount(amount);
 
+        // TODO: Make this conditional
+        dropInRequest.androidPayCart(Cart.newBuilder()
+            .setCurrencyCode("GBP")
+            .setTotalPrice(amount)
+            .addLineItem(LineItem.newBuilder()
+                .setCurrencyCode("GBP")
+                .setDescription(primaryDescription)
+                .setQuantity("1")
+                .setUnitPrice(amount)
+                .setTotalPrice(amount)
+                .build())
+            .build()
+        );
+
         this.cordova.setActivityResultCallback(this);
         this.cordova.startActivityForResult(this, dropInRequest.getIntent(this.cordova.getActivity()), DROP_IN_REQUEST);
 
