@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-braintree"
-        version="0.5.2">
+        version="0.5.3">
 
     <name>Braintree Plugin</name>
 
@@ -20,7 +20,7 @@
     <!-- Android Configuration -->
     <platform name="android">
 
-        <config-file target="res/xml/config.xml" parent="/*">
+        <config-file target="config.xml" parent="/*">
             <feature name="BraintreePlugin">
                 <param name="android-package" value="net.justincredible.BraintreePlugin" />
             </feature>
@@ -30,7 +30,7 @@
 
         <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
 
-        <config-file target="AndroidManifest.xml" parent="application">
+        <config-file target="app/src/main/AndroidManifest.xml" parent="application">
 			<activity android:name="com.braintreepayments.api.BraintreeBrowserSwitchActivity" android:launchMode="singleTask">
 				<intent-filter>
 					<action android:name="android.intent.action.VIEW" />
