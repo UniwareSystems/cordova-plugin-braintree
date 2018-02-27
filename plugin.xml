@@ -41,6 +41,9 @@
 			</activity>
         </config-file>
 
+        <framework src="com.google.android.gms:play-services-wallet:11.6.2"/>
+        <framework src="com.android.support:support-v13:+"/>
+
     </platform>
 
     <!-- iOS Configuration -->
