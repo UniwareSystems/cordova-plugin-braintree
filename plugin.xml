@@ -2,7 +2,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-braintree"
-        version="0.5.3">
+        version="0.5.4">
 
     <name>Braintree Plugin</name>
 
@@ -41,7 +41,7 @@
 			</activity>
         </config-file>
 
-        <framework src="com.google.android.gms:play-services-wallet:11.6.2"/>
+        <framework src="com.google.android.gms:play-services-wallet:11.8.0"/>
         <framework src="com.android.support:support-v13:+"/>
 
     </platform>
