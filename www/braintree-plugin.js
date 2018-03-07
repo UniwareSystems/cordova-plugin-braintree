@@ -90,4 +90,12 @@ BraintreePlugin.presentDropInPaymentUI = function showDropInUI(options, successC
 	exec(successCallback, failureCallback, PLUGIN_ID, "presentDropInPaymentUI", pluginOptions);
 };
 
+BraintreePlugin.payPalProcess = function payPayProcess(amount, currency, successCallback, failureCallback) {
+    exec(successCallback, failureCallback, PLUGIN_ID, "payPalProcess", [amount, currency]);
+};
+
+BraintreePlugin.payPalProcessVaulted = function payPalProcessVaulted(successCallback, failureCallback) {
+    exec(successCallback, failureCallback, PLUGIN_ID, "payPalProcessVaulted", []);
+};
+
 module.exports = BraintreePlugin;

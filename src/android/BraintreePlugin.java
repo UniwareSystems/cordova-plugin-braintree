@@ -5,14 +5,20 @@ import android.content.Intent;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.braintreepayments.api.BraintreeFragment;
+import com.braintreepayments.api.DataCollector;
+import com.braintreepayments.api.PayPal;
 import com.braintreepayments.api.dropin.DropInRequest;
 import com.braintreepayments.api.dropin.DropInResult;
+import com.braintreepayments.api.interfaces.PaymentMethodNonceCreatedListener;
 import com.braintreepayments.api.models.CardNonce;
 import com.braintreepayments.api.models.PayPalAccountNonce;
+import com.braintreepayments.api.models.PayPalRequest;
 import com.braintreepayments.api.models.PaymentMethodNonce;
 import com.braintreepayments.api.models.ThreeDSecureInfo;
 import com.braintreepayments.api.models.VenmoAccountNonce;
@@ -22,7 +28,7 @@ import com.google.android.gms.wallet.LineItem;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class BraintreePlugin extends CordovaPlugin {
+public final class BraintreePlugin extends CordovaPlugin implements PaymentMethodNonceCreatedListener {
 
     private static final int DROP_IN_REQUEST = 100;
     private static final int PAYMENT_BUTTON_REQUEST = 200;
@@ -30,7 +36,8 @@ public final class BraintreePlugin extends CordovaPlugin {
     private static final int PAYPAL_REQUEST = 400;
 
     private DropInRequest dropInRequest = null;
-    private CallbackContext dropInUICallbackContext = null;
+    private CallbackContext _callbackContext = null;
+    private BraintreeFragment braintreeFragment = null;
 
     @Override
     public synchronized boolean execute(String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -39,35 +46,34 @@ public final class BraintreePlugin extends CordovaPlugin {
             return false;
         }
 
-        if (action.equals("initialize")) {
-
-            try {
+        try {
+            if (action.equals("initialize")) {
                 this.initialize(args, callbackContext);
             }
-            catch (Exception exception) {
-                callbackContext.error("BraintreePlugin uncaught exception: " + exception.getMessage());
-            }
-
-            return true;
-        }
-        else if (action.equals("presentDropInPaymentUI")) {
-
-            try {
+            else if (action.equals("presentDropInPaymentUI")) {
                 this.presentDropInPaymentUI(args, callbackContext);
             }
-            catch (Exception exception) {
-                callbackContext.error("BraintreePlugin uncaught exception: " + exception.getMessage());
+            else if (action.equals("paypalProcess")) {
+                this.payPalProcess(args);
             }
+            else if (action.equals("paypalProcessVaulted")) {
+                this.payPalProcessVaulted();
+            }
+            else {
+                // The given action was not handled above.
+                return false;
+            }
+        }
+            catch (Exception exception) {
+            callbackContext.error("BraintreePlugin uncaught exception: " + exception.getMessage());
+        }
 
-            return true;
-        }
-        else {
-            // The given action was not handled above.
-            return false;
-        }
+        return true;
     }
 
-    private synchronized void initialize(final JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    // Actions
+
+    private synchronized void initialize(final JSONArray args, final CallbackContext callbackContext) throws Exception {
 
         // Ensure we have the correct number of arguments.
         if (args.length() != 1) {
@@ -89,6 +95,9 @@ public final class BraintreePlugin extends CordovaPlugin {
             callbackContext.error("The Braintree client failed to initialize.");
             return;
         }
+
+        braintreeFragment = BraintreeFragment.newInstance(this.cordova.getActivity(), token);
+        braintreeFragment.addListener(this);
 
         callbackContext.success();
     }
@@ -141,14 +150,25 @@ public final class BraintreePlugin extends CordovaPlugin {
         this.cordova.setActivityResultCallback(this);
         this.cordova.startActivityForResult(this, dropInRequest.getIntent(this.cordova.getActivity()), DROP_IN_REQUEST);
 
-        dropInUICallbackContext = callbackContext;
+        _callbackContext = callbackContext;
     }
+
+    private synchronized void payPalProcess(final JSONArray args) throws Exception {
+        PayPalRequest payPalRequest = new PayPalRequest(args.getString(0));
+        payPalRequest.currencyCode(args.getString(1));
+        PayPal.requestOneTimePayment(braintreeFragment, payPalRequest);
+    }
+    private synchronized void payPalProcessVaulted() throws Exception {
+        PayPal.authorizeAccount(braintreeFragment);
+    }
+
+    // Results
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
-        if (dropInUICallbackContext == null) {
+        if (_callbackContext == null) {
             return;
         }
 
@@ -165,14 +185,14 @@ public final class BraintreePlugin extends CordovaPlugin {
         }
         else if (requestCode == PAYMENT_BUTTON_REQUEST) {
             //TODO
-            dropInUICallbackContext.error("Activity result handler for PAYMENT_BUTTON_REQUEST not implemented.");
+            _callbackContext.error("Activity result handler for PAYMENT_BUTTON_REQUEST not implemented.");
         }
         else if (requestCode == CUSTOM_REQUEST) {
-            dropInUICallbackContext.error("Activity result handler for CUSTOM_REQUEST not implemented.");
+            _callbackContext.error("Activity result handler for CUSTOM_REQUEST not implemented.");
             //TODO
         }
         else if (requestCode == PAYPAL_REQUEST) {
-            dropInUICallbackContext.error("Activity result handler for PAYPAL_REQUEST not implemented.");
+            _callbackContext.error("Activity result handler for PAYPAL_REQUEST not implemented.");
             //TODO
         }
     }
@@ -185,27 +205,27 @@ public final class BraintreePlugin extends CordovaPlugin {
      */
     private void handleDropInPaymentUiResult(int resultCode, PaymentMethodNonce paymentMethodNonce) {
 
-        if (dropInUICallbackContext == null) {
+        if (_callbackContext == null) {
             return;
         }
 
         if (resultCode == Activity.RESULT_CANCELED) {
             Map<String, Object> resultMap = new HashMap<String, Object>();
             resultMap.put("userCancelled", true);
-            dropInUICallbackContext.success(new JSONObject(resultMap));
-            dropInUICallbackContext = null;
+            _callbackContext.success(new JSONObject(resultMap));
+            _callbackContext = null;
             return;
         }
 
         if (paymentMethodNonce == null) {
-            dropInUICallbackContext.error("Result was not RESULT_CANCELED, but no PaymentMethodNonce was returned from the Braintree SDK.");
-            dropInUICallbackContext = null;
+            _callbackContext.error("Result was not RESULT_CANCELED, but no PaymentMethodNonce was returned from the Braintree SDK.");
+            _callbackContext = null;
             return;
         }
 
         Map<String, Object> resultMap = this.getPaymentUINonceResult(paymentMethodNonce);
-        dropInUICallbackContext.success(new JSONObject(resultMap));
-        dropInUICallbackContext = null;
+        _callbackContext.success(new JSONObject(resultMap));
+        _callbackContext = null;
     }
 
     /**
@@ -276,5 +296,26 @@ public final class BraintreePlugin extends CordovaPlugin {
         }
 
         return resultMap;
+    }
+
+    @Override
+    public void onPaymentMethodNonceCreated(PaymentMethodNonce paymentMethodNonce) {
+        try {
+            JSONObject json = new JSONObject();
+
+            json.put("nonce", paymentMethodNonce.getNonce().toString());
+            json.put("deviceData", DataCollector.collectDeviceData(braintreeFragment));
+
+            if (paymentMethodNonce instanceof PayPalAccountNonce) {
+                PayPalAccountNonce pp = (PayPalAccountNonce) paymentMethodNonce;
+                json.put("payerId", pp.getPayerId().toString());
+                json.put("forename", pp.getFirstName().toString());
+                json.put("surname", pp.getLastName().toString());
+            }
+
+            _callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, json));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
