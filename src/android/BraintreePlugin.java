@@ -46,12 +46,14 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
             return false;
         }
 
+        _callbackContext = callbackContext;
+
         try {
             if (action.equals("initialize")) {
-                this.initialize(args, callbackContext);
+                this.initialize(args);
             }
             else if (action.equals("presentDropInPaymentUI")) {
-                this.presentDropInPaymentUI(args, callbackContext);
+                this.presentDropInPaymentUI(args);
             }
             else if (action.equals("payPalProcess")) {
                 this.payPalProcess(args);
@@ -73,11 +75,11 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
 
     // Actions
 
-    private synchronized void initialize(final JSONArray args, final CallbackContext callbackContext) throws Exception {
+    private synchronized void initialize(final JSONArray args) throws Exception {
 
         // Ensure we have the correct number of arguments.
         if (args.length() != 1) {
-            callbackContext.error("A token is required.");
+            _callbackContext.error("A token is required.");
             return;
         }
 
@@ -85,21 +87,21 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
         String token = args.getString(0);
 
         if (token == null || token.equals("")) {
-            callbackContext.error("A token is required.");
+            _callbackContext.error("A token is required.");
             return;
         }
 
         dropInRequest = new DropInRequest().clientToken(token);
 
         if (dropInRequest == null) {
-            callbackContext.error("The Braintree client failed to initialize.");
+            _callbackContext.error("The Braintree client failed to initialize.");
             return;
         }
 
         braintreeFragment = BraintreeFragment.newInstance(this.cordova.getActivity(), token);
         braintreeFragment.addListener(this);
 
-        callbackContext.success();
+        _callbackContext.success();
     }
 
     private synchronized void setupApplePay(final JSONArray args, final CallbackContext callbackContext) throws JSONException {
@@ -107,17 +109,17 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
         callbackContext.success();
     }
 
-    private synchronized void presentDropInPaymentUI(final JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    private synchronized void presentDropInPaymentUI(final JSONArray args) throws JSONException {
 
         // Ensure the client has been initialized.
         if (dropInRequest == null) {
-            callbackContext.error("The Braintree client must first be initialized via BraintreePlugin.initialize(token)");
+            _callbackContext.error("The Braintree client must first be initialized via BraintreePlugin.initialize(token)");
             return;
         }
 
         // Ensure we have the correct number of arguments.
         if (args.length() < 1) {
-            callbackContext.error("amount is required.");
+            _callbackContext.error("amount is required.");
             return;
         }
 
@@ -126,7 +128,7 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
         String amount = args.getString(0);
         
         if (amount == null) {
-            callbackContext.error("amount is required.");
+            _callbackContext.error("amount is required.");
         }
         
         String primaryDescription = args.getString(1);
@@ -149,8 +151,6 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
 
         this.cordova.setActivityResultCallback(this);
         this.cordova.startActivityForResult(this, dropInRequest.getIntent(this.cordova.getActivity()), DROP_IN_REQUEST);
-
-        _callbackContext = callbackContext;
     }
 
     private synchronized void payPalProcess(final JSONArray args) throws Exception {
