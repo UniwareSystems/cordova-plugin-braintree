@@ -91,7 +91,9 @@ public final class BraintreePlugin extends CordovaPlugin implements PaymentMetho
             return;
         }
 
-        dropInRequest = new DropInRequest().clientToken(token);
+        dropInRequest = new DropInRequest()
+            .clientToken(token)
+            .disablePayPal();
 
         if (dropInRequest == null) {
             _callbackContext.error("The Braintree client failed to initialize.");

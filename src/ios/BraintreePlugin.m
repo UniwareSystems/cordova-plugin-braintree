@@ -159,6 +159,7 @@ NSString *countryCode;
     BTDropInRequest *paymentRequest = [[BTDropInRequest alloc] init];
     paymentRequest.amount = amount;
     paymentRequest.applePayDisabled = !applePayInited;
+    paymentRequest.paypalDisabled = true;
     
     BTDropInController *dropIn = [[BTDropInController alloc] initWithAuthorization:self.token request:paymentRequest handler:^(BTDropInController * _Nonnull controller, BTDropInResult * _Nullable result, NSError * _Nullable error) {
         [self.viewController dismissViewControllerAnimated:YES completion:nil];
