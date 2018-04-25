@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-braintree",
-  "version": "0.5.9",
+  "version": "0.6.0",
   "description": "A Cordova plugin for the Braintree mobile payment processing SDK.",
   "cordova": {
     "id": "cordova-plugin-braintree",
